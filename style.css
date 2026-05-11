@@ -90,6 +90,30 @@ body {
     font-size: 1.5rem;
     transition: transform 0.5s ease;
     cursor: default;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.potato-bundle {
+    font-size: 2rem;
+    position: relative;
+    background: rgba(255, 105, 180, 0.1);
+    border-radius: 10px;
+    padding: 5px;
+}
+
+.potato-bundle::after {
+    content: 'x10';
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    font-size: 0.7rem;
+    background: var(--dark-pink);
+    color: white;
+    border-radius: 5px;
+    padding: 1px 4px;
+    font-weight: bold;
 }
 
 .d-day-info {
@@ -206,6 +230,21 @@ body {
     margin-top: 15px;
 }
 
+.edit-btn {
+    background: none;
+    border: none;
+    color: #FFB7C5;
+    font-size: 0.75rem;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 5px;
+    padding: 0;
+}
+
+.edit-btn:hover {
+    color: #FF69B4;
+}
+
 /* 하단 퀵 네비게이션 (Quick Nav) 스타일 */
 .quick-nav {
     position: fixed;
@@ -320,6 +359,285 @@ body {
     0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
     40% {transform: translateY(-10px);}
     60% {transform: translateY(-5px);}
+}
+
+/* 화면 전환 스타일 */
+.screen {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.screen-hidden {
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+/* 캘린더 스타일 */
+.calendar-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.calendar-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #5D4037;
+}
+
+.calendar-nav button {
+    background: var(--pastel-pink);
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.calendar-nav button:hover {
+    background: var(--dark-pink);
+}
+
+.calendar-container {
+    background: white;
+    border-radius: 25px;
+    padding: 15px;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: bold;
+    color: #FF69B4;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 0.2s;
+    position: relative;
+}
+
+.calendar-day:hover {
+    background: #FFF0F5;
+}
+
+.calendar-day.today {
+    background: var(--pastel-pink);
+    color: white;
+    font-weight: bold;
+}
+
+.calendar-day.selected {
+    border: 2px solid var(--dark-pink);
+}
+
+.calendar-day.vacation-day {
+    background-color: #FFF0F5;
+    color: #FF1493;
+    font-weight: bold;
+}
+
+.calendar-day.vacation-day::after {
+    content: '🐾';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 0.6rem;
+}
+
+.calendar-day.anniversary-day {
+    background-color: #FFF5F5;
+    color: #E91E63;
+}
+
+.calendar-day.anniversary-day::after {
+    content: '❤️';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 0.6rem;
+}
+
+.calendar-day.others-day {
+    background-color: #F5F5FF;
+    color: #3F51B5;
+}
+
+.calendar-day.others-day::after {
+    content: '✨';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 0.6rem;
+}
+
+.date-marker-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.date-marker-selector button {
+    background: white;
+    border: 1px solid #FFE4E1;
+    border-radius: 15px;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.date-marker-selector button:hover {
+    background: #FFF0F5;
+}
+
+.date-marker-selector button.clear-btn {
+    color: #999;
+}
+
+.calendar-day.other-month {
+    color: #DDD;
+}
+
+.calendar-detail {
+    margin-top: 20px;
+    background: white;
+    border-radius: 20px;
+    padding: 15px;
+    min-height: 100px;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.03);
+}
+
+.detail-notice {
+    text-align: center;
+    color: #BBB;
+    font-size: 0.9rem;
+    margin-top: 25px;
+}
+
+/* 우리의 기록 (일기/사진) 스타일 */
+.diary-section-hidden {
+    display: none;
+}
+
+#selected-date-title {
+    text-align: center;
+    color: #FF69B4;
+    margin-bottom: 20px;
+}
+
+.four-cut-frame {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    background: #333; /* 인생네컷 어두운 배경 */
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.photo-slot {
+    aspect-ratio: 3 / 4;
+    background: #444;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #777;
+    font-size: 0.8rem;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+}
+
+.diary-split {
+    display: flex;
+    gap: 15px;
+}
+
+.diary-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.diary-box label {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #5D4037;
+}
+
+.diary-box textarea {
+    width: 100%;
+    height: 100px;
+    border: 1px solid #FFE4E1;
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 0.9rem;
+    resize: none;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.diary-box textarea:focus {
+    border-color: var(--dark-pink);
+}
+
+.photo-upload-btns {
+    display: flex;
+    gap: 5px;
+}
+
+.photo-upload-btns button {
+    flex: 1;
+    background: #FFF0F5;
+    border: 1px solid var(--pastel-pink);
+    border-radius: 8px;
+    padding: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.save-btn {
+    background: var(--dark-pink);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.save-btn:hover {
+    background: #FF69B4;
 }
 
 /* 네비게이션 공간 확보를 위한 여백 */

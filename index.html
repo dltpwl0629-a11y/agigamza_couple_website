@@ -11,71 +11,155 @@
         <!-- 휴가 모드 배경 (평소에는 숨김) -->
         <div id="vacation-bg" class="vacation-background"></div>
 
-        <!-- 상단: 야옹이의 핑크 감자밭 -->
-        <header class="potato-field-container" id="main-header">
-            <h1 class="title" id="main-title">야옹이의 핑크 감자밭</h1>
+        <!-- [메인 화면] -->
+        <section id="main-screen" class="screen">
+            <!-- 상단: 야옹이의 핑크 감자밭 -->
+            <header class="potato-field-container" id="main-header">
+                <h1 class="title" id="main-title">야옹이의 핑크 감자밭</h1>
+                
+                <div class="field-visual" id="field-visual">
+                    <!-- 야옹이 캐릭터 영역 -->
+                    <div class="meow-character" id="meow-character">
+                        <div class="straw-hat">👒</div>
+                        <div class="meow-face" id="meow-face">😴</div>
+                        <div class="basket" id="basket">🧺</div>
+                    </div>
+
+                    <!-- 감자밭 영역 -->
+                    <div class="potato-field" id="potato-field">
+                        <!-- 감자들이 여기에 동적으로 생성됩니다 -->
+                    </div>
+
+                    <!-- 휴가 모드 타이머 영역 (평소에는 숨김) -->
+                    <div id="vacation-timer-container" class="vacation-timer-hidden">
+                        <p class="timer-label">우리가 함께한 시간</p>
+                        <div id="vacation-timer" class="timer-display">00:00:00</div>
+                    </div>
+                </div>
+
+                <div class="d-day-info">
+                    <p id="d-day-text">휴가까지 D-??</p>
+                    <p id="vacation-status-msg" class="vacation-msg-hidden"></p>
+                </div>
+            </header>
+
+            <!-- 중앙: 오늘의 질문 (Daily Q&A) -->
+            <main class="daily-qna-container">
+                <div class="qna-card">
+                    <h2 class="qna-title">오늘의 야옹이와 아기감자에게</h2>
+                    <div class="question-box">
+                        <p id="current-question">질문을 불러오는 중...</p>
+                    </div>
+
+                    <div class="answers-area">
+                        <!-- 야옹이 답변 -->
+                        <div class="answer-wrapper" id="kitty-wrapper">
+                            <label>🐾 야옹이의 대답</label>
+                            <div class="answer-content blurred" id="kitty-answer-display">답변을 입력하면 공개됩니다!</div>
+                            <div class="input-group" id="kitty-input-group">
+                                <input type="text" id="kitty-input" placeholder="야옹아, 여기에 적어줘!">
+                                <button onclick="submitAnswer('kitty')">등록</button>
+                            </div>
+                            <button class="edit-btn" id="kitty-edit-btn" style="display:none" onclick="editAnswer('kitty')">수정하기</button>
+                        </div>
+
+                        <!-- 아기감자 답변 -->
+                        <div class="answer-wrapper" id="potato-wrapper">
+                            <label>🥔 아기감자의 대답</label>
+                            <div class="answer-content blurred" id="potato-answer-display">답변을 입력하면 공개됩니다!</div>
+                            <div class="input-group" id="potato-input-group">
+                                <input type="text" id="potato-input" placeholder="감자야, 여기에 적어줘!">
+                                <button onclick="submitAnswer('potato')">등록</button>
+                            </div>
+                            <button class="edit-btn" id="potato-edit-btn" style="display:none" onclick="editAnswer('potato')">수정하기</button>
+                        </div>                    </div>
+
+                    <p class="lock-notice" id="lock-notice">두 명 모두 답변해야 서로의 내용을 볼 수 있어요! 🔒</p>
+                </div>
+            </main>
+        </section>
+
+        <!-- [캘린더 화면] -->
+        <section id="calendar-screen" class="screen screen-hidden">
+            <header class="calendar-header">
+                <h1 class="title">커플 캘린더</h1>
+                <div class="calendar-nav">
+                    <button onclick="changeMonth(-1)">◀</button>
+                    <span id="calendar-month-year">2026년 5월</span>
+                    <button onclick="changeMonth(1)">▶</button>
+                </div>
+            </header>
             
-            <div class="field-visual" id="field-visual">
-                <!-- 야옹이 캐릭터 영역 -->
-                <div class="meow-character" id="meow-character">
-                    <div class="straw-hat">👒</div>
-                    <div class="meow-face" id="meow-face">😴</div>
-                    <div class="basket" id="basket">🧺</div>
+            <div class="calendar-container">
+                <div class="calendar-weekdays">
+                    <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
                 </div>
-
-                <!-- 감자밭 영역 -->
-                <div class="potato-field" id="potato-field">
-                    <!-- 감자들이 여기에 동적으로 생성됩니다 -->
-                </div>
-
-                <!-- 휴가 모드 타이머 영역 (평소에는 숨김) -->
-                <div id="vacation-timer-container" class="vacation-timer-hidden">
-                    <p class="timer-label">우리가 함께한 시간</p>
-                    <div id="vacation-timer" class="timer-display">00:00:00</div>
+                <div class="calendar-days" id="calendar-days">
+                    <!-- 달력 일자가 동적으로 생성됩니다 -->
                 </div>
             </div>
-
-            <div class="d-day-info">
-                <p id="d-day-text">휴가까지 D-??</p>
-                <p id="vacation-status-msg" class="vacation-msg-hidden"></p>
-            </div>
-        </header>
-
-        <!-- 중앙: 오늘의 질문 (Daily Q&A) -->
-        <main class="daily-qna-container">
-            <div class="qna-card">
-                <h2 class="qna-title">오늘의 야옹이와 아기감자에게</h2>
-                <div class="question-box">
-                    <p id="current-question">질문을 불러오는 중...</p>
-                </div>
-
-                <div class="answers-area">
-                    <!-- 야옹이 답변 -->
-                    <div class="answer-wrapper" id="kitty-wrapper">
-                        <label>🐾 야옹이의 대답</label>
-                        <div class="answer-content blurred" id="kitty-answer-display">답변을 입력하면 공개됩니다!</div>
-                        <div class="input-group" id="kitty-input-group">
-                            <input type="text" id="kitty-input" placeholder="야옹아, 여기에 적어줘!">
-                            <button onclick="submitAnswer('kitty')">등록</button>
-                        </div>
+            
+            <div class="calendar-detail" id="calendar-detail">
+                <div id="diary-section" class="diary-section-hidden">
+                    <h3 id="selected-date-title">2026년 5월 11일</h3>
+                    
+                    <!-- 날짜 마킹 버튼 -->
+                    <div class="date-marker-selector">
+                        <button onclick="markDate('vacation')">🏝️ 휴가</button>
+                        <button onclick="markDate('anniversary')">❤️ 기념일</button>
+                        <button onclick="markDate('others')">✨ 기타</button>
+                        <button onclick="markDate('none')" class="clear-btn">초기화</button>
                     </div>
 
-                    <!-- 아기감자 답변 -->
-                    <div class="answer-wrapper" id="potato-wrapper">
-                        <label>🥔 아기감자의 대답</label>
-                        <div class="answer-content blurred" id="potato-answer-display">답변을 입력하면 공개됩니다!</div>
-                        <div class="input-group" id="potato-input-group">
-                            <input type="text" id="potato-input" placeholder="감자야, 여기에 적어줘!">
-                            <button onclick="submitAnswer('potato')">등록</button>
+                    <!-- 인생네컷 레이아웃 -->
+                    <div class="four-cut-frame">
+                        <div class="photo-slot" id="photo-kitty-1"><span>🐾 Photo 1</span></div>
+                        <div class="photo-slot" id="photo-kitty-2"><span>🐾 Photo 2</span></div>
+                        <div class="photo-slot" id="photo-potato-1"><span>🥔 Photo 1</span></div>
+                        <div class="photo-slot" id="photo-potato-2"><span>🥔 Photo 2</span></div>
+                    </div>
+
+                    <div class="diary-split">
+                        <!-- 야옹이 구역 -->
+                        <div class="diary-box kitty-diary">
+                            <label>🐾 야옹이의 기록</label>
+                            <textarea id="kitty-diary-input" placeholder="오늘 하루는 어땠어?"></textarea>
+                            <div class="photo-upload-btns">
+                                <button onclick="uploadPhoto('kitty', 1)">📸 1</button>
+                                <button onclick="uploadPhoto('kitty', 2)">📸 2</button>
+                            </div>
+                            <button class="save-btn" onclick="saveDiary('kitty')">기록하기</button>
+                        </div>
+
+                        <!-- 아기감자 구역 -->
+                        <div class="diary-box potato-diary">
+                            <label>🥔 아기감자의 기록</label>
+                            <textarea id="potato-diary-input" placeholder="오늘의 추억을 적어줘!"></textarea>
+                            <div class="photo-upload-btns">
+                                <button onclick="uploadPhoto('potato', 1)">📸 1</button>
+                                <button onclick="uploadPhoto('potato', 2)">📸 2</button>
+                            </div>
+                            <button class="save-btn" onclick="saveDiary('potato')">기록하기</button>
                         </div>
                     </div>
                 </div>
-
-                <p class="lock-notice" id="lock-notice">두 명 모두 답변해야 서로의 내용을 볼 수 있어요! 🔒</p>
+                <p class="detail-notice" id="diary-placeholder">날짜를 선택하여 일기를 확인하세요! ✨</p>
             </div>
-        </main>
+        </section>
 
-        <!-- 하단: 퀵 네비게이션 (Quick Navigation) -->
+        <!-- [발자취 화면 - 추후] -->
+        <section id="footsteps-screen" class="screen screen-hidden">
+            <h1 class="title">데이트 발자취</h1>
+            <p style="text-align: center;">준비 중인 화면입니다! 📍</p>
+        </section>
+
+        <!-- [버킷리스트 화면 - 추후] -->
+        <section id="bucketlist-screen" class="screen screen-hidden">
+            <h1 class="title">우리들의 버킷리스트</h1>
+            <p style="text-align: center;">준비 중인 화면입니다! 📝</p>
+        </section>
+
+        <!-- 하단: 퀵 네비게이션 -->
         <nav class="quick-nav">
             <button class="nav-item active" onclick="switchScreen('main')">
                 <span class="nav-icon">🏠</span>
@@ -94,6 +178,9 @@
                 <span class="nav-label">버킷리스트</span>
             </button>
         </nav>
+
+        <!-- 숨겨진 사진 업로드 입력창 -->
+        <input type="file" id="real-photo-input" style="display:none" accept="image/*">
     </div>
     <script src="script.js"></script>
 </body>
