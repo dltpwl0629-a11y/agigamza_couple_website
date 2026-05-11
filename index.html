@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>야옹이의 핑크 감자밭</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 휴가 모드 배경 (평소에는 숨김) -->
+        <div id="vacation-bg" class="vacation-background"></div>
+
+        <!-- 상단: 야옹이의 핑크 감자밭 -->
+        <header class="potato-field-container" id="main-header">
+            <h1 class="title" id="main-title">야옹이의 핑크 감자밭</h1>
+            
+            <div class="field-visual" id="field-visual">
+                <!-- 야옹이 캐릭터 영역 -->
+                <div class="meow-character" id="meow-character">
+                    <div class="straw-hat">👒</div>
+                    <div class="meow-face" id="meow-face">😴</div>
+                    <div class="basket" id="basket">🧺</div>
+                </div>
+
+                <!-- 감자밭 영역 -->
+                <div class="potato-field" id="potato-field">
+                    <!-- 감자들이 여기에 동적으로 생성됩니다 -->
+                </div>
+
+                <!-- 휴가 모드 타이머 영역 (평소에는 숨김) -->
+                <div id="vacation-timer-container" class="vacation-timer-hidden">
+                    <p class="timer-label">우리가 함께한 시간</p>
+                    <div id="vacation-timer" class="timer-display">00:00:00</div>
+                </div>
+            </div>
+
+            <div class="d-day-info">
+                <p id="d-day-text">휴가까지 D-??</p>
+                <p id="vacation-status-msg" class="vacation-msg-hidden"></p>
+            </div>
+        </header>
+
+        <!-- 중앙: 오늘의 질문 (Daily Q&A) -->
+        <main class="daily-qna-container">
+            <div class="qna-card">
+                <h2 class="qna-title">오늘의 야옹이와 아기감자에게</h2>
+                <div class="question-box">
+                    <p id="current-question">질문을 불러오는 중...</p>
+                </div>
+
+                <div class="answers-area">
+                    <!-- 야옹이 답변 -->
+                    <div class="answer-wrapper" id="kitty-wrapper">
+                        <label>🐾 야옹이의 대답</label>
+                        <div class="answer-content blurred" id="kitty-answer-display">답변을 입력하면 공개됩니다!</div>
+                        <div class="input-group" id="kitty-input-group">
+                            <input type="text" id="kitty-input" placeholder="야옹아, 여기에 적어줘!">
+                            <button onclick="submitAnswer('kitty')">등록</button>
+                        </div>
+                    </div>
+
+                    <!-- 아기감자 답변 -->
+                    <div class="answer-wrapper" id="potato-wrapper">
+                        <label>🥔 아기감자의 대답</label>
+                        <div class="answer-content blurred" id="potato-answer-display">답변을 입력하면 공개됩니다!</div>
+                        <div class="input-group" id="potato-input-group">
+                            <input type="text" id="potato-input" placeholder="감자야, 여기에 적어줘!">
+                            <button onclick="submitAnswer('potato')">등록</button>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="lock-notice" id="lock-notice">두 명 모두 답변해야 서로의 내용을 볼 수 있어요! 🔒</p>
+            </div>
+        </main>
+
+        <!-- 하단: 퀵 네비게이션 (Quick Navigation) -->
+        <nav class="quick-nav">
+            <button class="nav-item active" onclick="switchScreen('main')">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">홈</span>
+            </button>
+            <button class="nav-item" onclick="switchScreen('calendar')">
+                <span class="nav-icon">📅</span>
+                <span class="nav-label">캘린더</span>
+            </button>
+            <button class="nav-item" onclick="switchScreen('footsteps')">
+                <span class="nav-icon">📍</span>
+                <span class="nav-label">발자취</span>
+            </button>
+            <button class="nav-item" onclick="switchScreen('bucketlist')">
+                <span class="nav-icon">📝</span>
+                <span class="nav-label">버킷리스트</span>
+            </button>
+        </nav>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
