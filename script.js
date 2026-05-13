@@ -1,8 +1,11 @@
-// 설정: 기본 휴가 날짜 (마커가 없을 경우 대비)
+import { saveQnA, getQnA, saveMarker, getMarkers, saveDiary as dbSaveDiary, getDiaries, supabase } from './db.js';
+
+// 설정
 let VACATION_START_DATE = '2026-06-01'; 
 const VACATION_END_DATE = '2026-06-07'; 
+const KITTY_ID = '00000000-0000-0000-0000-000000000001';
+const POTATO_ID = '00000000-0000-0000-0000-000000000002';
 
-// 질문 데이터셋
 const QUESTIONS = [
     "오늘 가장 기억에 남는 순간은 무엇인가요?",
     "지금 당장 같이 먹고 싶은 음식은?",
@@ -11,61 +14,44 @@ const QUESTIONS = [
     "최근에 나를 보고 설레었던 순간이 있나요?"
 ];
 
+// 전역 상태 캐시 (반복적인 DB 호출 최적화)
+let markersCache = [];
+
 function calculateDDay(targetDate) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const target = new Date(targetDate);
     target.setHours(0, 0, 0, 0);
-
     const diffTime = target - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
 function updateMeowFace(days) {
     const faceElement = document.getElementById('meow-face');
     if (!faceElement) return;
-
-    let face = '🐱'; // 기본형
-    if (days >= 10) {
-        face = '😴';
-    } else if (days >= 4) {
-        face = '🙂';
-    } else if (days >= 1) {
-        face = '😍';
-    } else if (days === 0) {
-        face = '🥳';
-    } else {
-        face = '😇';
-    }
+    let face = '🐱';
+    if (days >= 10) face = '😴';
+    else if (days >= 4) face = '🙂';
+    else if (days >= 1) face = '😍';
+    else if (days === 0) face = '🥳';
+    else face = '😇';
     faceElement.innerText = face;
 }
 
 function renderPotatoes(days) {
     const field = document.getElementById('potato-field');
     if (!field) return;
-
     field.innerHTML = '';
-    if (days <= 0) {
-        field.style.display = 'none';
-        return;
-    }
+    if (days <= 0) { field.style.display = 'none'; return; }
     field.style.display = 'grid';
-
-    // 10일 단위 묶음 계산
     const bundles = Math.floor(days / 10);
     const individuals = days % 10;
-
-    // 묶음 감자 생성 (10개들이)
     for (let i = 0; i < bundles; i++) {
         const bundle = document.createElement('div');
         bundle.className = 'potato potato-bundle';
-        bundle.innerText = '🧺'; // 바구니나 더 큰 감자 더미 아이콘
-        bundle.title = "10일 묶음 감자";
+        bundle.innerText = '🧺';
         field.appendChild(bundle);
     }
-
-    // 일반 감자 생성
     for (let i = 0; i < individuals; i++) {
         const potato = document.createElement('div');
         potato.className = 'potato';
@@ -74,55 +60,32 @@ function renderPotatoes(days) {
     }
 }
 
-// Q&A 로직
-function initQnA() {
-    // 현재 날짜를 기반으로 고정된 인덱스 생성
+async function initQnA() {
     const today = new Date();
     const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
     const qIndex = dateSeed % QUESTIONS.length;
-    
     const questionElement = document.getElementById('current-question');
-    if (questionElement) {
-        questionElement.innerText = QUESTIONS[qIndex];
-    }
-    loadAnswers();
+    if (questionElement) questionElement.innerText = QUESTIONS[qIndex];
+    await loadAnswers();
 }
 
 async function submitAnswer(user) {
     const input = document.getElementById(`${user}-input`);
     const answer = input.value.trim();
-
-    if (!answer) {
-        alert("내용을 입력해주세요! 🐾");
-        return;
-    }
-
+    if (!answer) { alert("내용을 입력해주세요! 🐾"); return; }
     const todayStr = new Date().toISOString().split('T')[0];
     const userId = user === 'kitty' ? KITTY_ID : POTATO_ID;
-    
-    // Supabase에 데이터 저장
-    const result = await addRecord(answer, todayStr, userId);
-    
-    if (result) {
-        alert("마음이 전달되었습니다! ❤️");
-        input.value = '';
-        await loadAnswers();
-    } else {
-        alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요. 😢");
-    }
+    await saveQnA(userId, todayStr, answer);
+    alert("마음이 전달되었습니다! ❤️");
+    input.value = '';
+    await loadAnswers();
 }
 
-async function editAnswer(user) {
-    // 수정 기능도 Supabase 연동이 필요하나, 현재는 입력 필드만 다시 보여주는 로직 유지
-    // 실제 수정 시에는 addRecord가 'upsert' 형태로 동작해야 함
+function editAnswer(user) {
     const inputGroup = document.getElementById(`${user}-input-group`);
-    const input = document.getElementById(`${user}-input`);
-    const editBtn = document.getElementById(`${user}-edit-btn`);
     const display = document.getElementById(`${user}-answer-display`);
-
+    const editBtn = document.getElementById(`${user}-edit-btn`);
     inputGroup.style.display = 'flex';
-    // 기존 답변을 가져오기 위해 loadAnswers에서 데이터를 전역 변수나 다른 방식으로 관리하는 것이 좋음
-    // 여기서는 간단히 수정 중 메시지만 표시
     editBtn.style.display = 'none';
     display.innerText = "수정 중...";
     display.classList.add('blurred');
@@ -130,15 +93,11 @@ async function editAnswer(user) {
 
 async function loadAnswers() {
     const todayStr = new Date().toISOString().split('T')[0];
-    
-    // Supabase에서 데이터 가져오기
-    const allRecords = await getRecords();
-    const todayRecords = allRecords.filter(r => r.date === todayStr);
-    
+    const answers = await getQnA(todayStr);
     const data = {};
-    todayRecords.forEach(r => {
-        if (r.user_id === KITTY_ID) data.kitty = r.content;
-        if (r.user_id === POTATO_ID) data.potato = r.content;
+    answers.forEach(a => {
+        if (a.user_id === KITTY_ID) data.kitty = a.answer;
+        if (a.user_id === POTATO_ID) data.potato = a.answer;
     });
 
     const kittyDisplay = document.getElementById('kitty-answer-display');
@@ -149,12 +108,10 @@ async function loadAnswers() {
     const potatoEditBtn = document.getElementById('potato-edit-btn');
     const lockNotice = document.getElementById('lock-notice');
 
-    if (!kittyDisplay || !potatoDisplay) return;
+    if (!kittyDisplay) return;
 
     kittyDisplay.classList.add('blurred');
     potatoDisplay.classList.add('blurred');
-    kittyEditBtn.style.display = 'none';
-    potatoEditBtn.style.display = 'none';
 
     if (data.kitty) {
         kittyDisplay.innerText = "답변 완료! 상대방의 답변을 기다리는 중..";
@@ -185,7 +142,148 @@ async function loadAnswers() {
     }
 }
 
-// 전역 함수로 노출 (HTML의 onclick 속성 대응)
+async function switchScreen(screenName) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('screen-hidden'));
+    const activeScreen = document.getElementById(`${screenName}-screen`);
+    if (activeScreen) activeScreen.classList.remove('screen-hidden');
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(i => {
+        const label = i.querySelector('.nav-label').innerText;
+        return (screenName === 'main' && label === '홈') || (screenName === 'calendar' && label === '캘린더');
+    });
+    if (targetNav) targetNav.classList.add('active');
+    if (screenName === 'calendar') await renderCalendar();
+    if (screenName === 'main') await init();
+}
+
+let currentViewDate = new Date();
+let selectedFullDate = "";
+
+async function changeMonth(offset) {
+    currentViewDate.setMonth(currentViewDate.getMonth() + offset);
+    await renderCalendar();
+}
+
+async function markDate(type) {
+    if (!selectedFullDate) return;
+    await saveMarker(selectedFullDate, type);
+    await renderCalendar();
+    await updateMainDDay();
+    alert("날짜 설정이 저장되었습니다! ✨");
+}
+
+async function updateMainDDay() {
+    markersCache = await getMarkers();
+    const vacations = markersCache.filter(m => m.marker_type === 'vacation').map(m => m.date).sort();
+    if (vacations.length > 0) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const future = vacations.find(d => d >= todayStr);
+        if (future) VACATION_START_DATE = future;
+    }
+}
+
+async function renderCalendar() {
+    const year = currentViewDate.getFullYear();
+    const month = currentViewDate.getMonth();
+    document.getElementById('calendar-month-year').innerText = `${year}년 ${month + 1}월`;
+    const daysContainer = document.getElementById('calendar-days');
+    daysContainer.innerHTML = '';
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    
+    // DB에서 마커들 다시 가져오기
+    markersCache = await getMarkers();
+
+    for (let i = 0; i < firstDay; i++) {
+        const div = document.createElement('div');
+        div.className = 'calendar-day other-month';
+        daysContainer.appendChild(div);
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    for (let i = 1; i <= lastDate; i++) {
+        const div = document.createElement('div');
+        div.className = 'calendar-day';
+        div.innerText = i;
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const marker = markersCache.find(m => m.date === dateStr);
+        if (dateStr === todayStr) div.classList.add('today');
+        if (marker) div.classList.add(`${marker.marker_type}-day`);
+        div.onclick = (e) => selectDate(year, month, i, e);
+        daysContainer.appendChild(div);
+    }
+}
+
+async function selectDate(year, month, day, event) {
+    document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+    if (event) event.currentTarget.classList.add('selected');
+    selectedFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    document.getElementById('diary-placeholder').style.display = 'none';
+    document.getElementById('diary-section').classList.remove('diary-section-hidden');
+    document.getElementById('selected-date-title').innerText = `${year}년 ${month + 1}월 ${day}일`;
+    await loadDiaryData();
+}
+
+async function loadDiaryData() {
+    const entries = await getDiaries(selectedFullDate);
+    const kitty = entries.find(e => e.user_id === KITTY_ID);
+    const potato = entries.find(e => e.user_id === POTATO_ID);
+    document.getElementById('kitty-diary-input').value = kitty ? kitty.content : '';
+    document.getElementById('potato-diary-input').value = potato ? potato.content : '';
+    // 사진 로직은 별도 테이블 구현 필요하나 현재는 텍스트 우선
+}
+
+async function saveDiary(user) {
+    const text = document.getElementById(`${user}-diary-input`).value.trim();
+    if (!text) { alert("내용을 입력해주세요! 🐾"); return; }
+    const userId = user === 'kitty' ? KITTY_ID : POTATO_ID;
+    await dbSaveDiary(userId, selectedFullDate, text);
+    alert("기록이 저장되었습니다! ❤️");
+}
+
+function uploadPhoto(user, slotNum) {
+    alert("사진 업로드 기능은 서버 저장소 설정 후 활성화됩니다! 📸");
+}
+
+async function init() {
+    await updateMainDDay();
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const start = new Date(VACATION_START_DATE);
+    const isVacation = today >= start && today <= new Date(VACATION_END_DATE);
+
+    if (isVacation) {
+        activateVacationMode(start);
+    } else {
+        const remainingDays = calculateDDay(VACATION_START_DATE);
+        const dDayText = document.getElementById('d-day-text');
+        if (dDayText) {
+            dDayText.style.display = 'block';
+            dDayText.innerText = remainingDays > 0 ? `휴가까지 D-${remainingDays}` : `다음 휴가를 기다려요.. 🌸`;
+        }
+        updateMeowFace(remainingDays);
+        renderPotatoes(remainingDays);
+    }
+    await initQnA();
+}
+
+function activateVacationMode(startTime) {
+    document.getElementById('app').classList.add('vacation-mode-active');
+    document.getElementById('d-day-text').style.display = 'none';
+    document.getElementById('vacation-status-msg').innerText = "아기감자와 야옹이가 행복하게 붙어있어요! ❤️";
+    setInterval(() => {
+        const diff = new Date() - startTime;
+        const d = Math.floor(diff / 86400000);
+        const h = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+        const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+        const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        const timer = document.getElementById('vacation-timer');
+        if (timer) timer.innerText = `${d}일 ${h}:${m}:${s}`;
+    }, 1000);
+}
+
+// 전역 노출
 window.switchScreen = switchScreen;
 window.changeMonth = changeMonth;
 window.markDate = markDate;
@@ -194,316 +292,4 @@ window.saveDiary = saveDiary;
 window.uploadPhoto = uploadPhoto;
 window.editAnswer = editAnswer;
 
-// 화면 전환 로직
-function switchScreen(screenName) {
-    const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => screen.classList.add('screen-hidden'));
-
-    const activeScreen = document.getElementById(`${screenName}-screen`);
-    if (activeScreen) {
-        activeScreen.classList.remove('screen-hidden');
-    }
-
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => item.classList.remove('active'));
-
-    const targetNav = Array.from(navItems).find(item => {
-        const label = item.querySelector('.nav-label').innerText;
-        if (screenName === 'main' && label === '홈') return true;
-        if (screenName === 'calendar' && label === '캘린더') return true;
-        if (screenName === 'footsteps' && label === '발자취') return true;
-        if (screenName === 'bucketlist' && label === '버킷리스트') return true;
-        return false;
-    });
-
-    if (targetNav) targetNav.classList.add('active');
-
-    if (screenName === 'calendar') {
-        renderCalendar();
-    }
-    if (screenName === 'main') {
-        init(); // 메인 화면 돌아올 때 D-Day 등 갱신
-    }
-}
-
-// 캘린더 관련 상태
-let currentViewDate = new Date();
-let selectedFullDate = ""; 
-let currentUploadUser = "";
-let currentUploadSlot = 0;
-
-function changeMonth(offset) {
-    currentViewDate.setMonth(currentViewDate.getMonth() + offset);
-    renderCalendar();
-}
-
-// 날짜 마킹 기능
-function markDate(type) {
-    if (!selectedFullDate) return;
-
-    const storageKey = `marker_${selectedFullDate}`;
-    if (type === 'none') {
-        localStorage.removeItem(storageKey);
-    } else {
-        localStorage.setItem(storageKey, type);
-    }
-
-    renderCalendar(); // 캘린더 갱신
-    updateMainDDay(); // 데이터 동기화
-    alert(`이 날을 ${type === 'none' ? '일반 날짜' : type}로 설정했습니다! ✨`);
-}
-
-function updateMainDDay() {
-    const allMarkers = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key.startsWith('marker_') && localStorage.getItem(key) === 'vacation') {
-            allMarkers.push(key.replace('marker_', ''));
-        }
-    }
-
-    if (allMarkers.length > 0) {
-        allMarkers.sort(); 
-        const todayStr = new Date().toISOString().split('T')[0];
-        const futureVacations = allMarkers.filter(date => date >= todayStr);
-        
-        if (futureVacations.length > 0) {
-            VACATION_START_DATE = futureVacations[0]; 
-        }
-    }
-}
-
-function renderCalendar() {
-    const year = currentViewDate.getFullYear();
-    const month = currentViewDate.getMonth();
-    const monthYearElement = document.getElementById('calendar-month-year');
-    if (!monthYearElement) return;
-
-    monthYearElement.innerText = `${year}년 ${month + 1}월`;
-
-    const daysContainer = document.getElementById('calendar-days');
-    daysContainer.innerHTML = '';
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDayOfWeek = firstDay.getDay();
-
-    const prevLastDay = new Date(year, month, 0).getDate();
-    for (let i = startDayOfWeek - 1; i >= 0; i--) {
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'calendar-day other-month';
-        dayDiv.innerText = prevLastDay - i;
-        daysContainer.appendChild(dayDiv);
-    }
-
-    const today = new Date();
-    for (let i = 1; i <= lastDay.getDate(); i++) {
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'calendar-day';
-        dayDiv.innerText = i;
-        
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        const markerType = localStorage.getItem(`marker_${dateStr}`);
-
-        if (year === today.getFullYear() && month === today.getMonth() && i === today.getDate()) {
-            dayDiv.classList.add('today');
-        }
-
-        if (markerType) {
-            dayDiv.classList.add(`${markerType}-day`);
-        }
-
-        dayDiv.onclick = (e) => selectDate(year, month, i, e);
-        daysContainer.appendChild(dayDiv);
-    }
-
-    const totalFilled = startDayOfWeek + lastDay.getDate();
-    const remaining = 42 - totalFilled;
-    for (let i = 1; i <= remaining; i++) {
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'calendar-day other-month';
-        dayDiv.innerText = i;
-        daysContainer.appendChild(dayDiv);
-    }
-}
-
-function selectDate(year, month, day, event) {
-    const allDays = document.querySelectorAll('.calendar-day');
-    allDays.forEach(d => d.classList.remove('selected'));
-    
-    if (event) event.currentTarget.classList.add('selected');
-
-    selectedFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    
-    document.getElementById('diary-placeholder').style.display = 'none';
-    const diarySection = document.getElementById('diary-section');
-    diarySection.classList.remove('diary-section-hidden');
-    document.getElementById('selected-date-title').innerText = `${year}년 ${month + 1}월 ${day}일`;
-
-    loadDiaryData();
-}
-
-function loadDiaryData() {
-    const storageKey = `diary_${selectedFullDate}`;
-    const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
-
-    document.getElementById('kitty-diary-input').value = data.kittyText || '';
-    document.getElementById('potato-diary-input').value = data.potatoText || '';
-
-    updatePhotoSlot('kitty', 1, data.kittyPhoto1);
-    updatePhotoSlot('kitty', 2, data.kittyPhoto2);
-    updatePhotoSlot('potato', 1, data.potatoPhoto1);
-    updatePhotoSlot('potato', 2, data.potatoPhoto2);
-}
-
-function saveDiary(user) {
-    const text = document.getElementById(`${user}-diary-input`).value.trim();
-    if (!text) {
-        alert("기록할 내용을 입력해주세요! 🐾");
-        return;
-    }
-
-    const storageKey = `diary_${selectedFullDate}`;
-    let data = JSON.parse(localStorage.getItem(storageKey) || '{}');
-    
-    data[`${user}Text`] = text;
-    localStorage.setItem(storageKey, JSON.stringify(data));
-    
-    alert(`${user === 'kitty' ? '야옹이' : '아기감자'}의 기록이 저장되었습니다! ❤️`);
-}
-
-function uploadPhoto(user, slotNum) {
-    currentUploadUser = user;
-    currentUploadSlot = slotNum;
-    document.getElementById('real-photo-input').click();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const fileInput = document.getElementById('real-photo-input');
-    if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 400; 
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    
-                    const storageKey = `diary_${selectedFullDate}`;
-                    let data = JSON.parse(localStorage.getItem(storageKey) || '{}');
-                    data[`${currentUploadUser}Photo${currentUploadSlot}`] = compressedDataUrl;
-                    
-                    try {
-                        localStorage.setItem(storageKey, JSON.stringify(data));
-                        updatePhotoSlot(currentUploadUser, currentUploadSlot, compressedDataUrl);
-                    } catch (e) {
-                        alert("저장 공간이 부족합니다! 😢");
-                    }
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-    
-    init(); 
-});
-
-function updatePhotoSlot(user, slotNum, url) {
-    const slot = document.getElementById(`photo-${user}-${slotNum}`);
-    if (url) {
-        slot.style.backgroundImage = `url('${url}')`;
-        slot.innerHTML = ''; 
-    } else {
-        slot.style.backgroundImage = '';
-        slot.innerHTML = `<span>${user === 'kitty' ? '🐾' : '🥔'} Photo ${slotNum}</span>`;
-    }
-}
-
-function activateVacationMode(startTime) {
-    const app = document.getElementById('app');
-    const dDayText = document.getElementById('d-day-text');
-    const statusMsg = document.getElementById('vacation-status-msg');
-    const meowFace = document.getElementById('meow-face');
-
-    if (app) app.classList.add('vacation-mode-active');
-    if (dDayText) dDayText.style.display = 'none';
-    if (statusMsg) statusMsg.innerText = "아기감자와 야옹이가 행복하게 붙어있어요! ❤️";
-    if (meowFace) meowFace.innerText = '🥳';
-
-    updateVacationTimer(startTime);
-    setInterval(() => updateVacationTimer(startTime), 1000);
-}
-
-function updateVacationTimer(startTime) {
-    const now = new Date();
-    const diff = now - startTime;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-    const timerDisplay = document.getElementById('vacation-timer');
-    if (timerDisplay) {
-        timerDisplay.innerText = `${days}일 ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }
-}
-
-function init() {
-    updateMainDDay(); // 마킹된 데이터 기반으로 휴가일 동기화
-    
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const start = new Date(VACATION_START_DATE);
-    start.setHours(0,0,0,0);
-    const end = new Date(VACATION_END_DATE);
-    end.setHours(0,0,0,0);
-    
-    const isVacation = today >= start && today <= end;
-
-    if (isVacation) {
-        activateVacationMode(start);
-    } else {
-        const app = document.getElementById('app');
-        if (app) app.classList.remove('vacation-mode-active'); // 휴가 모드 해제
-
-        const remainingDays = calculateDDay(VACATION_START_DATE);
-        const dDayText = document.getElementById('d-day-text');
-        const statusMsg = document.getElementById('vacation-status-msg');
-
-        if (dDayText) {
-            dDayText.style.display = 'block';
-            if (remainingDays > 0) {
-                dDayText.innerText = `휴가까지 D-${remainingDays}`;
-            } else {
-                dDayText.innerText = `다음 휴가를 기다려요.. 🌸`;
-            }
-        }
-        if (statusMsg) statusMsg.innerText = "";
-        
-        updateMeowFace(remainingDays);
-        renderPotatoes(remainingDays);
-    }
-    initQnA();
-}
-emainingDays);
-    }
-    initQnA();
-}
+document.addEventListener('DOMContentLoaded', init);
