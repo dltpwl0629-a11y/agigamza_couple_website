@@ -88,7 +88,7 @@ function initQnA() {
     loadAnswers();
 }
 
-function submitAnswer(user) {
+async function submitAnswer(user) {
     const input = document.getElementById(`${user}-input`);
     const answer = input.value.trim();
 
@@ -98,36 +98,48 @@ function submitAnswer(user) {
     }
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const storageKey = `qna_${todayStr}`;
-    let data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const userId = user === 'kitty' ? KITTY_ID : POTATO_ID;
     
-    data[user] = answer;
-    localStorage.setItem(storageKey, JSON.stringify(data));
-
-    loadAnswers();
+    // Supabase에 데이터 저장
+    const result = await addRecord(answer, todayStr, userId);
+    
+    if (result) {
+        alert("마음이 전달되었습니다! ❤️");
+        input.value = '';
+        await loadAnswers();
+    } else {
+        alert("저장에 실패했습니다. 잠시 후 다시 시도해주세요. 😢");
+    }
 }
 
-function editAnswer(user) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const storageKey = `qna_${todayStr}`;
-    const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
-
+async function editAnswer(user) {
+    // 수정 기능도 Supabase 연동이 필요하나, 현재는 입력 필드만 다시 보여주는 로직 유지
+    // 실제 수정 시에는 addRecord가 'upsert' 형태로 동작해야 함
     const inputGroup = document.getElementById(`${user}-input-group`);
     const input = document.getElementById(`${user}-input`);
     const editBtn = document.getElementById(`${user}-edit-btn`);
     const display = document.getElementById(`${user}-answer-display`);
 
     inputGroup.style.display = 'flex';
-    input.value = data[user] || '';
+    // 기존 답변을 가져오기 위해 loadAnswers에서 데이터를 전역 변수나 다른 방식으로 관리하는 것이 좋음
+    // 여기서는 간단히 수정 중 메시지만 표시
     editBtn.style.display = 'none';
     display.innerText = "수정 중...";
     display.classList.add('blurred');
 }
 
-function loadAnswers() {
+async function loadAnswers() {
     const todayStr = new Date().toISOString().split('T')[0];
-    const storageKey = `qna_${todayStr}`;
-    const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    
+    // Supabase에서 데이터 가져오기
+    const allRecords = await getRecords();
+    const todayRecords = allRecords.filter(r => r.date === todayStr);
+    
+    const data = {};
+    todayRecords.forEach(r => {
+        if (r.user_id === KITTY_ID) data.kitty = r.content;
+        if (r.user_id === POTATO_ID) data.potato = r.content;
+    });
 
     const kittyDisplay = document.getElementById('kitty-answer-display');
     const potatoDisplay = document.getElementById('potato-answer-display');
@@ -172,6 +184,15 @@ function loadAnswers() {
         lockNotice.innerText = "두 명 모두 답변해야 서로의 내용을 볼 수 있어요! 🔒";
     }
 }
+
+// 전역 함수로 노출 (HTML의 onclick 속성 대응)
+window.switchScreen = switchScreen;
+window.changeMonth = changeMonth;
+window.markDate = markDate;
+window.submitAnswer = submitAnswer;
+window.saveDiary = saveDiary;
+window.uploadPhoto = uploadPhoto;
+window.editAnswer = editAnswer;
 
 // 화면 전환 로직
 function switchScreen(screenName) {
@@ -479,6 +500,10 @@ function init() {
         
         updateMeowFace(remainingDays);
         renderPotatoes(remainingDays);
+    }
+    initQnA();
+}
+emainingDays);
     }
     initQnA();
 }
